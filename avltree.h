@@ -1,15 +1,15 @@
 #if defined(TEST) || defined(DEBUG)
-# include <assert.h>
-# define DEBUG_ASSERT(cond, mes) (assert(cond && mes))
+#include <assert.h>
+#define DEBUG_ASSERT(cond, mes) (assert(cond &&mes))
 #else
-# define DEBUG_ASSERT ((void)0)
+#define DEBUG_ASSERT(cond, mes) ((void)0)
 #endif
 
 typedef struct avl_node {
-	size_t          index;
+	size_t index;
 	struct avl_node *left;
 	struct avl_node *right;
-	int             height;
+	int height;
 } AVLNode;
 
 typedef struct {
