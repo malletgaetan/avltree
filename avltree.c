@@ -15,9 +15,10 @@ static AVLNode *_right_rotate(AVLNode *old_root)
 {
 	DEBUG_ASSERT(old_root != NULL, "_right_rotate AVLNode shouldn't be NULL");
 	AVLNode *new_root = old_root->left;
+	AVLNode *T2 = new_root->right;
 
-	old_root->left = new_root->right;
 	new_root->right = old_root;
+	old_root->left = T2;
 
 	old_root->height = MAX(_height(old_root->left), _height(old_root->right)) + 1;
 	new_root->height = MAX(_height(new_root->left), _height(new_root->right)) + 1;
@@ -29,9 +30,10 @@ static AVLNode *_left_rotate(AVLNode *old_root)
 {
 	DEBUG_ASSERT(old_root != NULL, "_left_rotate AVLNode shouldn't be NULL");
 	AVLNode *new_root = old_root->right;
+	AVLNode *T2 = new_root->left;
 
-	old_root->right = new_root->left;
 	new_root->left = old_root;
+	old_root->right = T2;
 
 	old_root->height = MAX(_height(old_root->left), _height(old_root->right)) + 1;
 	new_root->height = MAX(_height(new_root->left), _height(new_root->right)) + 1;
@@ -114,8 +116,7 @@ void avl_tree_init(AVLTree *tree)
 	return;
 }
 
-// #ifdef TEST
-#define TEST_ARRAY_SIZE 1000000
+#ifdef TEST
 #include <stdio.h>
 
 void *xmalloc(size_t size)
@@ -227,27 +228,64 @@ void test_left_rotate(void)
 	assert(test_equals(unode, bnode) && "left_rotate should.. left rotate?");
 }
 
+void swap(int *a, int *b)
+{
+	int temp = *a;
+	*a = *b;
+	*b = temp;
+}
+
+void shuffle(int arr[], int n)
+{
+	for (int i = n - 1; i > 0; i--) {
+		int j = rand() % (i + 1);
+		swap(&arr[i], &arr[j]);
+	}
+}
+
+int test_check_height(AVLNode *node)
+{
+	if (node == NULL)
+		return 0;
+
+	size_t height = MAX(test_check_height(node->left), test_check_height(node->right)) + 1;
+	assert(height == node->height && "height should be the max height of the children + 1");
+	return height;
+}
+
 void test_stress(size_t size)
 {
-	AVLNode *nodes = malloc(sizeof(AVLNode) * size);
+	AVLNode *nodes = xmalloc(sizeof(AVLNode) * size);
+	int *arr = xmalloc(sizeof(size_t) * size);
 	AVLTree tree;
 	avl_tree_init(&tree);
 	for (size_t i = 0; i < size; i++) {
-		avl_node_init(&nodes[i]);
-		nodes[i].index = i;
-		avl_insert(&tree, &nodes[i]);
-		assert(avl_find(&tree, i) != NULL && "inserted data should be retrievable");
-		assert(tree.root->height - 1 <= (int)ceil(log2f((float)MAX(2, i))) &&
+		arr[i] = i;
+	}
+	shuffle(arr, size);
+
+	for (size_t i = 0; i < size; i++) {
+		size_t index = arr[i];
+		avl_node_init(&nodes[index]);
+		nodes[index].index = index;
+		avl_insert(&tree, &nodes[index]);
+		assert(avl_find(&tree, index) == &nodes[index] && "inserted data should be retrievable");
+		assert(tree.root->height - 1 <= (int)ceil(1.44 * log2f((float)MAX(2, i))) &&
 			   "tree should stay balanced");
 	}
+	if (size < 10000)
+		test_check_height(tree.root);
+
+	return;
 }
 
 int main(void)
 {
 	test_left_rotate();
 	test_right_rotate();
-	test_stress(TEST_ARRAY_SIZE);
+	test_stress(9999);
+	test_stress(1234567); // not fast enough for 123456789.. maybe soon :)
 	printf("TEST OK (*˘︶˘*).｡*♡\n");
 }
 
-// #endif
+#endif
